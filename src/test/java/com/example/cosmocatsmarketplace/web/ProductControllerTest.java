@@ -7,6 +7,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.example.cosmocatsmarketplace.common.CategoryType;
 import com.example.cosmocatsmarketplace.domain.Product;
 import com.example.cosmocatsmarketplace.dto.ProductDto;
+import com.example.cosmocatsmarketplace.featureToggle.FeatureToggles;
+import com.example.cosmocatsmarketplace.featureToggle.aspect.FeatureToggleAspect;
+import com.example.cosmocatsmarketplace.featureToggle.service.FeatureToggleService;
 import com.example.cosmocatsmarketplace.service.ProductService;
 import com.example.cosmocatsmarketplace.service.mapper.ProductMapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -15,7 +18,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -30,6 +36,9 @@ class ProductControllerTest {
 
   @MockBean
   private ProductMapper productMapper;
+
+  @MockBean
+  private FeatureToggleService featureToggleService;
 
   private ObjectMapper objectMapper;
   private Product product;
@@ -55,25 +64,52 @@ class ProductControllerTest {
         .build();
   }
 
+  @TestConfiguration
+  @EnableAspectJAutoProxy
+  static class TestConfig {
+    @Bean
+    public FeatureToggleAspect featureToggleAspect() {
+      return new FeatureToggleAspect();
+    }
+  }
+
   @Test
-  void testGetAllProducts() throws Exception {
+  void testGetAllProductsWhenFeatureToggleIsEnabled() throws Exception {
+    when(featureToggleService.check(FeatureToggles.KITTY_PRODUCTS.getFeatureName())).thenReturn(true);
     List<Product> products = List.of(product);
     List<ProductDto> productDtos = List.of(productDto);
 
     when(productService.getAllProducts()).thenReturn(products);
     when(productMapper.toProductDto(any(Product.class))).thenReturn(productDtos.get(0));
 
-    mockMvc.perform(get("/api/v1/products"))
+    mockMvc.perform(get("/api/v1/products")
+            .contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.length()").value(1));
   }
 
   @Test
-  void testGetProductById() throws Exception {
+  void testGetAllProductsWhenFeatureToggleIsDisabled() throws Exception {
+    when(featureToggleService.check(FeatureToggles.KITTY_PRODUCTS.getFeatureName())).thenReturn(false);
+    List<Product> products = List.of(product);
+    List<ProductDto> productDtos = List.of(productDto);
+
+    when(productService.getAllProducts()).thenReturn(products);
+    when(productMapper.toProductDto(any(Product.class))).thenReturn(productDtos.get(0));
+
+    mockMvc.perform(get("/api/v1/products")
+            .contentType(MediaType.APPLICATION_JSON))
+        .andExpect(status().isNotFound());
+  }
+
+  @Test
+  void testGetProductByIdWhenFeatureToggleIsEnabled() throws Exception {
+    when(featureToggleService.check(FeatureToggles.KITTY_PRODUCTS.getFeatureName())).thenReturn(true);
     when(productService.getProductById(1L)).thenReturn(product);
     when(productMapper.toProductDto(product)).thenReturn(productDto);
 
-    mockMvc.perform(get("/api/v1/products/1"))
+    mockMvc.perform(get("/api/v1/products/1")
+            .contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.name").value("Test Product"))
         .andExpect(jsonPath("$.description").value("Test Description"))
@@ -82,7 +118,19 @@ class ProductControllerTest {
   }
 
   @Test
-  void testCreateProduct() throws Exception {
+  void testGetProductByIdWhenFeatureToggleIsDisabled() throws Exception {
+    when(featureToggleService.check(FeatureToggles.KITTY_PRODUCTS.getFeatureName())).thenReturn(false);
+    when(productService.getProductById(1L)).thenReturn(product);
+    when(productMapper.toProductDto(product)).thenReturn(productDto);
+
+    mockMvc.perform(get("/api/v1/products/1")
+            .contentType(MediaType.APPLICATION_JSON))
+        .andExpect(status().isNotFound());
+  }
+
+  @Test
+  void testCreateProductWhenFeatureToggleIsEnabled() throws Exception {
+    when(featureToggleService.check(FeatureToggles.KITTY_PRODUCTS.getFeatureName())).thenReturn(true);
     when(productMapper.toProduct(any(ProductDto.class))).thenReturn(product);
     when(productService.createProduct(product)).thenReturn(product);
     when(productMapper.toProductDto(product)).thenReturn(productDto);
@@ -103,6 +151,24 @@ class ProductControllerTest {
   }
 
   @Test
+  void testCreateProductWhenFeatureToggleIsDisabled() throws Exception {
+    when(featureToggleService.check(FeatureToggles.KITTY_PRODUCTS.getFeatureName())).thenReturn(false);
+    when(productMapper.toProduct(any(ProductDto.class))).thenReturn(product);
+    when(productService.createProduct(product)).thenReturn(product);
+    when(productMapper.toProductDto(product)).thenReturn(productDto);
+    when(productMapper.toCategoriesString(List.of(CategoryType.values())))
+        .then(invocation -> List.of("Electronics"));
+
+    String productDtoJson = objectMapper.writeValueAsString(productDto);
+    System.out.println("ProductDto JSON: " + productDtoJson);
+
+    mockMvc.perform(post("/api/v1/products")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(productDtoJson))
+        .andExpect(status().isNotFound());
+  }
+
+  @Test
   void testCreateProductWithInvalidPrice() throws Exception {
     when(productMapper.toCategoriesString(List.of(CategoryType.values())))
         .then(invocation -> List.of("Electronics"));
@@ -120,7 +186,7 @@ class ProductControllerTest {
             .contentType(MediaType.APPLICATION_JSON)
             .content(productDtoJson))
         .andExpect(status().isBadRequest())
-        .andExpect(jsonPath("$.message").value("Price cannot be 0 or less"));
+        .andExpect(jsonPath("$.detail").value("Price cannot be 0 or less"));
   }
 
   @Test
@@ -140,7 +206,7 @@ class ProductControllerTest {
             .contentType(MediaType.APPLICATION_JSON)
             .content(productDtoJson))
         .andExpect(status().isBadRequest())
-        .andExpect(jsonPath("$.message").value("Name is mandatory"));
+        .andExpect(jsonPath("$.detail").value("Name is mandatory"));
   }
 
   @Test
@@ -160,7 +226,7 @@ class ProductControllerTest {
             .contentType(MediaType.APPLICATION_JSON)
             .content(productDtoJson))
         .andExpect(status().isBadRequest())
-        .andExpect(jsonPath("$.message").value("Description is mandatory"));
+        .andExpect(jsonPath("$.detail").value("Description is mandatory"));
   }
 
   @Test
@@ -178,7 +244,7 @@ class ProductControllerTest {
             .contentType(MediaType.APPLICATION_JSON)
             .content(productDtoJson))
         .andExpect(status().isBadRequest())
-        .andExpect(jsonPath("$.message").value("Categories cannot be empty"));
+        .andExpect(jsonPath("$.detail").value("Categories cannot be empty"));
   }
 
   @Test
@@ -199,7 +265,7 @@ class ProductControllerTest {
             .contentType(MediaType.APPLICATION_JSON)
             .content(productDtoJson))
         .andExpect(status().isBadRequest())
-        .andExpect(jsonPath("$.message").value("Invalid Category"));
+        .andExpect(jsonPath("$.detail").value("Invalid Category"));
   }
 
   @Test

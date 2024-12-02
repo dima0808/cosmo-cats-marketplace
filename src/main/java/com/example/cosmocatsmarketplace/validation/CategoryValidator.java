@@ -1,7 +1,7 @@
 package com.example.cosmocatsmarketplace.validation;
 
 import com.example.cosmocatsmarketplace.common.CategoryType;
-import com.example.cosmocatsmarketplace.service.mapper.ProductMapper;
+import com.example.cosmocatsmarketplace.service.mapper.GeneralServiceMapper;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 
@@ -11,7 +11,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class CategoryValidator implements ConstraintValidator<ValidCategory, List<String>> {
 
-  private final ProductMapper productMapper;
+  private final GeneralServiceMapper productMapper;
 
   @Override
   public boolean isValid(List<String> categories, ConstraintValidatorContext context) {

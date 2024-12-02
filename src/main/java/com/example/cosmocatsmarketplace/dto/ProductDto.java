@@ -1,6 +1,7 @@
 package com.example.cosmocatsmarketplace.dto;
 
 import com.example.cosmocatsmarketplace.validation.ValidCategory;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -17,6 +18,9 @@ import lombok.NoArgsConstructor;
 @Data
 @Builder
 public class ProductDto {
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private Long id;
 
   @NotBlank(message = "Name is mandatory")
   @Size(max = 100, message = "Name cannot exceed 100 characters")

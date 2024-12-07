@@ -1,0 +1,57 @@
+databaseChangeLog:
+  - changeSet:
+      id: lab-3-1
+      author: dmytro & dmytro
+      changes:
+        # Create sequence for cosmo_cat ID
+        - createSequence:
+            sequenceName: cosmo_cat_id_seq
+            incrementBy: 50
+
+        # Create table cosmo_cat
+        - createTable:
+            tableName: cosmo_cat
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: address
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: true
+              - column:
+                  name: cat_reference
+                  type: UUID
+                  constraints:
+                    nullable: true
+              - column:
+                  name: email
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: phone_number
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: true
+
+        # Add unique constraint on cat_reference
+        - addUniqueConstraint:
+            tableName: cosmo_cat
+            columnNames: cat_reference
+            constraintName: unique_cat_reference
+
+        # Add unique constraint on email
+        - addUniqueConstraint:
+            tableName: cosmo_cat
+            columnNames: email
+            constraintName: unique_cat_email

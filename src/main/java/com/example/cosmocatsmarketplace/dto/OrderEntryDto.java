@@ -1,6 +1,5 @@
-package com.example.cosmocatsmarketplace.domain;
+package com.example.cosmocatsmarketplace.dto;
 
-import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -10,8 +9,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Data
 @Builder
-public class Order {
+public class OrderEntryDto {
 
-  private Long id;
-  private List<Product> products;
+  private Integer quantity;
+  private ProductDto product;
 }

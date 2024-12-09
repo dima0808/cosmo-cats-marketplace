@@ -5,6 +5,7 @@ import lombok.Data;
 
 @Builder
 @Data
+@Deprecated
 public class CustomErrorResponse {
 
   private int status;

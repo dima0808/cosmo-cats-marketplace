@@ -1,0 +1,40 @@
+databaseChangeLog:
+  - changeSet:
+      id: lab-3-4
+      author: dmytro & dmytro
+      changes:
+        # Create sequence for product ID
+        - createSequence:
+            sequenceName: product_id_seq
+            incrementBy: 50
+
+        # Create table product
+        - createTable:
+            tableName: product
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: product_reference
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: true
+              - column:
+                  name: name
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: price
+                  type: INTEGER
+                  constraints:
+                    nullable: false

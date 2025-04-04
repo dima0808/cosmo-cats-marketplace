@@ -10,6 +10,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -27,6 +28,7 @@ public class OrderController {
   private final OrderServiceMapper orderServiceMapper;
 
   @GetMapping
+  @PreAuthorize("hasRole('COSMO_ADMIN')")
   public ResponseEntity<OrderListDto> getAllOrders() {
     return ResponseEntity.ok(orderServiceMapper.toOrderListDto(orderService.getAllOrders()));
   }
